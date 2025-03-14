@@ -15,6 +15,9 @@ dev = [
     "ruff>=0.10.0",
 ]
 
+[tool.mypy]
+disallow_untyped_defs = true
+
 [tool.ruff]
 lint.select = ["E", "F", "I", "W"]
 line-length = 88
