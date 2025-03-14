@@ -35,12 +35,12 @@ class PositionalEncoding(nn.Module):
         )  # (d_model / 2)
 
         # Apply sine to even indeices
-        pe[:, 0::2] == torch.sin(
+        pe[:, 0::2] = torch.sin(
             position * div_term
         )  # sin(position * (10000 ^ (2i / d_model)))
 
         # Apply cosine to odd indices
-        pe[:, 1::2] == torch.cos(
+        pe[:, 1::2] = torch.cos(
             position * div_term
         )  # cos(position * (10000 ^ (2i / d_model)))
 
@@ -51,7 +51,25 @@ class PositionalEncoding(nn.Module):
         self.register_buffer("pe", pe)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = x + self.pe[:, : x.shape[1], :].requires_grad_(  # type: ignore
-            False
-        )  # (batch, seq, d_model)
+        if isinstance(self.pe, torch.Tensor):
+            pe = self.pe
+        else:
+            raise ValueError("Positional encoding is not a tensor")
+        x = x + pe[:, : x.shape[1], :].requires_grad_(False)  # (batch, seq, d_model)
         return self.dropout(x)
+
+
+if __name__ == "__main__":
+    d_model = 512
+    seq = 10
+    dropout = 0.1
+
+    input_embedding = InputEmbedding(d_model, 100)
+    positional_encoding = PositionalEncoding(d_model, seq, dropout)
+    print(positional_encoding.pe)
+    x = torch.randint(0, 100, (1, seq))
+    print(x)
+    x = input_embedding(x)
+    print(x)
+    x = positional_encoding(x)
+    print(x)
