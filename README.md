@@ -1,2 +1,2 @@
 # transformer-from-scratch
-A step-by-step implementation of the Transformer model from scratch, following 'Building a Transformer from Scratch: A Step-by-Step Guide'
+A step-by-step implementation of the Transformer model from scratch, following '[Building a Transformer from Scratch: A Step-by-Step Guide | by Ebad Sayed | Medium](https://medium.com/@sayedebad.777/building-a-transformer-from-scratch-a-step-by-step-guide-a3df0aeb7c9a)' 
