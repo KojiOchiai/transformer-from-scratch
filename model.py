@@ -122,7 +122,8 @@ class MultiHeadAttentionBlock(nn.Module):
         # (batch, h, seq, d_k) --> (batch, h, seq, seq)
         attention_scores = (query @ key.transpose(-2, -1)) / math.sqrt(d_k)
         if mask is not None:
-            # Write a verry low value (indicating -inf) to the positions where mask is True
+            # Write a verry low value (indicating -inf)
+            # to the positions where mask is True
             attention_scores = attention_scores.masked_fill(mask == 0, -1e9)
         attention_scores = torch.softmax(
             attention_scores, dim=-1
