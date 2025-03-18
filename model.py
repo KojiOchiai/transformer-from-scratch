@@ -180,6 +180,41 @@ class ResidualConnection(nn.Module):
         return x + self.dropout(sublayer(self.norm(x)))
 
 
+class EncoderBlock(nn.Module):
+    def __init__(
+        self,
+        features: int,
+        self_attention_block: MultiHeadAttentionBlock,
+        feed_forward_block: FeedForwardBlock,
+        dropout: float,
+    ) -> None:
+        super().__init__()
+        self.self_attention_block = self_attention_block
+        self.feed_forward_block = feed_forward_block
+        self.residual_connection = nn.ModuleList(
+            [ResidualConnection(features, dropout) for _ in range(2)]
+        )
+
+    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        x = self.residual_connection[0](
+            x, lambda x: self.self_attention_block(x, x, x, mask)
+        )
+        x = self.residual_connection[1](x, self.feed_forward_block)
+        return x
+
+
+class Encoder(nn.Module):
+    def __init__(self, features: int, layers: nn.ModuleList) -> None:
+        super().__init__()
+        self.layers = layers
+        self.norm = LayerNormalization(features)
+
+    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        for layer in self.layers:
+            x = layer(x, mask)
+        return self.norm(x)
+
+
 if __name__ == "__main__":
     d_model = 512
     seq = 10
