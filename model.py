@@ -293,6 +293,21 @@ class Decoder(nn.Module):
         return self.norm(x)
 
 
+# Linear Layer
+
+
+class ProjectionLayer(nn.Module):
+    """Mapping the output of decoder to the vocabulary space"""
+
+    def __init__(self, d_model: int, vocab_size: int) -> None:
+        super().__init__()
+        self.proj = nn.Linear(d_model, vocab_size)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # (batch, seq, d_model) --> (batch, seq, vocab_size)
+        return self.proj(x)
+
+
 if __name__ == "__main__":
     d_model = 512
     seq = 10
