@@ -3,6 +3,8 @@ import math
 import torch
 import torch.nn as nn
 
+# Input Embeddings
+
 
 class InputEmbedding(nn.Module):
     def __init__(self, d_model: int, vocab_size: int) -> None:
@@ -13,6 +15,9 @@ class InputEmbedding(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.embedding(x) * math.sqrt(self.d_model)
+
+
+# Positional Encoding
 
 
 class PositionalEncoding(nn.Module):
@@ -59,6 +64,9 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
+# Layer Normalization
+
+
 class LayerNormalization(nn.Module):
     def __init__(self, features: int, eps: float = 1e-6) -> None:
         super().__init__()
@@ -81,6 +89,9 @@ class LayerNormalization(nn.Module):
         return self.alpha * (x - mean) / (std + self.eps) + self.bias
 
 
+# Feed Forward Layer
+
+
 class FeedForwardBlock(nn.Module):
     def __init__(self, d_model: int, d_ff: int, dropout: float) -> None:
         super().__init__()
@@ -91,6 +102,9 @@ class FeedForwardBlock(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # (batch, seq, d_model) -> (batch, seq, d_ff) -> (batch, set, d_model)
         return self.linear_2(self.droptou(torch.relu(self.linear_1(x))))
+
+
+# Multi-Head Attention
 
 
 class MultiHeadAttentionBlock(nn.Module):
@@ -168,6 +182,9 @@ class MultiHeadAttentionBlock(nn.Module):
         return self.w_o(x)
 
 
+# Residual Connection
+
+
 class ResidualConnection(nn.Module):
     def __init__(self, features: int, dropout: float) -> None:
         super().__init__()
@@ -178,6 +195,9 @@ class ResidualConnection(nn.Module):
         self, x: torch.Tensor, sublayer: MultiHeadAttentionBlock | FeedForwardBlock
     ) -> torch.Tensor:
         return x + self.dropout(sublayer(self.norm(x)))
+
+
+# Encoder
 
 
 class EncoderBlock(nn.Module):
