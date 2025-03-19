@@ -5,6 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "datasets>=3.4.1",
+    "tokenizers>=0.21.1",
     "torch>=2.6.0",
     "torchvision>=0.21.0",
 ]
