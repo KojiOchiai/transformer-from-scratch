@@ -106,9 +106,11 @@ class TranslationDataset(Dataset):
             "encoder_mask": (encoder_input != self.pad_token)
             .unsqueeze(0)
             .unsqueeze(0)
-            .int(),  # (1, 1, seq)
+            .int(),  # (1: batch, 1: query, seq: key)
             "decoder_mask": (decoder_input != self.pad_token).unsqueeze(0).int()
-            & causal_mask(decoder_input.size(0)),  # (1, seq) & (1, seq, seq)
+            & causal_mask(
+                decoder_input.size(0)
+            ),  # (1: query, seq: key) & (1: batch, seq: query, seq: key)
             "label": label,  # (seq)
             "src_text": src_text,
             "tgt_text": tgt_text,
@@ -117,4 +119,4 @@ class TranslationDataset(Dataset):
 
 def causal_mask(size: int) -> torch.Tensor:
     mask = torch.triu(torch.ones((1, size, size)), diagonal=1).type(torch.int)
-    return mask == 0
+    return mask == 0  # (1: batch, seq: query, seq: key)
