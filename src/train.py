@@ -6,7 +6,6 @@ from typing import Callable, Generator
 import torch
 import torch.nn as nn
 import torchmetrics
-import torchtext.datasets as datasets  # type: ignore
 from datasets import Dataset as HFDataset  # type: ignore # From Huggingface
 from datasets import load_dataset  # type: ignore # From Huggingface
 from tokenizers import Tokenizer  # type: ignore # From Huggingface

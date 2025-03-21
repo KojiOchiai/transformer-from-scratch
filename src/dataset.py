@@ -30,7 +30,7 @@ class TranslationDataset(Dataset):
             [tokenizer_tgt.token_to_id("[EOS]")], dtype=torch.int64
         )
         self.pad_token = torch.tensor(
-            [tokenizer_tgt.token_to_id("[pad]")], dtype=torch.int64
+            [tokenizer_tgt.token_to_id("[PAD]")], dtype=torch.int64
         )
 
     def __len__(self) -> int:
