@@ -68,7 +68,6 @@ def greedy_decode(
 def run_validation(
     model: Transformer,
     validation_ds: DataLoader,
-    tokenizer_src: Tokenizer,
     tokenizer_tgt: Tokenizer,
     max_len: int,
     device: torch.device,
@@ -347,7 +346,6 @@ def train_model(config: Config) -> None:
         run_validation(
             model,
             val_dataloader,
-            tokenizer_src,
             tokenizer_tgt,
             config.seq,
             device,
