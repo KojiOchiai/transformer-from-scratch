@@ -94,10 +94,11 @@ def run_validation(
         console_width = 80
 
     with torch.no_grad():
-        for batch in validation_ds:
+        for batch_ in validation_ds:
+            batch = Batch(**batch_)
             count += 1
-            encoder_input = batch["encoder_input"].to(device)  # (b, seq)
-            encoder_mask = batch["encoder_mask"].to(device)  # (b, 1, 1, seq)
+            encoder_input = batch.encoder_input.to(device)  # (b, seq)
+            encoder_mask = batch.encoder_mask.to(device)  # (b, 1, 1, seq)
 
             # check that the batch size is 1
             assert encoder_input.size(0) == 1, "Batch size must be 1 for validation"
@@ -111,8 +112,8 @@ def run_validation(
                 device,
             )
 
-            source_text = batch["src_text"][0]
-            target_text = batch["tgt_text"][0]
+            source_text = batch.src_text[0]
+            target_text = batch.tgt_text[0]
             model_out_text = tokenizer_tgt.decode(model_out.detach().cpu().numpy())
 
             source_texts.append(source_text)
