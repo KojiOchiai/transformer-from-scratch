@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader, random_split
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from config import get_config, get_weights_file_path, latest_weights_file_path
+from config import Config, get_weights_file_path, latest_weights_file_path
 from dataset import TranslationDataset, causal_mask
 from model import Transformer, build_transformer
 
@@ -155,8 +155,8 @@ def get_all_sentences(ds: HFDataset, lang: str) -> Generator[str, None, None]:
         yield item["translation"][lang]
 
 
-def get_or_build_tokenizer(config: dict, ds: HFDataset, lang: str) -> Tokenizer:
-    tokenizer_path = Path(config["tokenizer_file"].format(lang))
+def get_or_build_tokenizer(config: Config, ds: HFDataset, lang: str) -> Tokenizer:
+    tokenizer_path = Path(config.tokenizer_file.format(lang))
     if not Path.exists(tokenizer_path):
         # # Most code taken from: https://huggingface.co/docs/tokenizers/quicktour
         tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
@@ -171,17 +171,17 @@ def get_or_build_tokenizer(config: dict, ds: HFDataset, lang: str) -> Tokenizer:
     return tokenizer
 
 
-def get_ds(config: dict) -> tuple[DataLoader, DataLoader, Tokenizer, Tokenizer]:
+def get_ds(config: Config) -> tuple[DataLoader, DataLoader, Tokenizer, Tokenizer]:
     # it only has the train split, so we divide it overselves
     ds_raw = load_dataset(
-        f"{config['datasource']}",
-        f"{config['lang_src']}-{config['lang_tgt']}",
+        f"{config.datasource}",
+        f"{config.lang_src}-{config.lang_tgt}",
         split="train",
     )
 
     # Build tokenizers
-    tokenizer_src = get_or_build_tokenizer(config, ds_raw, config["lang_src"])
-    tokenizer_tgt = get_or_build_tokenizer(config, ds_raw, config["lang_tgt"])
+    tokenizer_src = get_or_build_tokenizer(config, ds_raw, config.lang_src)
+    tokenizer_tgt = get_or_build_tokenizer(config, ds_raw, config.lang_tgt)
 
     # Keep 90% for training, 10% for validation
     train_ds_size = int(0.9 * len(ds_raw))
@@ -192,17 +192,17 @@ def get_ds(config: dict) -> tuple[DataLoader, DataLoader, Tokenizer, Tokenizer]:
         train_ds_raw,
         tokenizer_src,
         tokenizer_tgt,
-        config["lang_src"],
-        config["lang_tgt"],
-        config["seq"],
+        config.lang_src,
+        config.lang_tgt,
+        config.seq,
     )
     val_ds = TranslationDataset(
         val_ds_raw,
         tokenizer_src,
         tokenizer_tgt,
-        config["lang_src"],
-        config["lang_tgt"],
-        config["seq"],
+        config.lang_src,
+        config.lang_tgt,
+        config.seq,
     )
 
     # Find the maximum length of eath sentence in the source and target sentence
@@ -210,33 +210,31 @@ def get_ds(config: dict) -> tuple[DataLoader, DataLoader, Tokenizer, Tokenizer]:
     max_len_tgt = 0
 
     for item in ds_raw:
-        src_ids = tokenizer_src.encode(item["translation"][config["lang_src"]]).ids
-        tgt_ids = tokenizer_tgt.encode(item["translation"][config["lang_tgt"]]).ids
+        src_ids = tokenizer_src.encode(item["translation"][config.lang_src]).ids
+        tgt_ids = tokenizer_tgt.encode(item["translation"][config.lang_tgt]).ids
         max_len_src = max(max_len_src, len(src_ids))
         max_len_tgt = max(max_len_tgt, len(tgt_ids))
 
     print(f"Max length of source sentence: {max_len_src}")
     print(f"Max length of target sentence: {max_len_tgt}")
 
-    train_dataloader = DataLoader(
-        train_ds, batch_size=config["batch_size"], shuffle=True
-    )
+    train_dataloader = DataLoader(train_ds, batch_size=config.batch_size, shuffle=True)
     val_dataloader = DataLoader(val_ds, batch_size=1, shuffle=True)
     return train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt
 
 
-def get_model(config: dict, vocab_src_len: int, vocab_tgt_len: int) -> Transformer:
+def get_model(config: Config, vocab_src_len: int, vocab_tgt_len: int) -> Transformer:
     model = build_transformer(
         vocab_src_len,
         vocab_tgt_len,
-        config["seq"],
-        config["seq"],
-        d_model=config["d_model"],
+        config.seq,
+        config.seq,
+        d_model=config.d_model,
     )
     return model
 
 
-def train_model(config: dict) -> None:
+def train_model(config: Config) -> None:
     # Define the device
     device_type = (
         "cuda"
@@ -266,7 +264,7 @@ def train_model(config: dict) -> None:
         )
 
     # Make sure the weight folder exists
-    Path(f"{config['datasource']}_{config['model_folder']}").mkdir(
+    Path(f"{config.datasource}_{config.model_folder}").mkdir(
         parents=True, exist_ok=True
     )
 
@@ -275,14 +273,14 @@ def train_model(config: dict) -> None:
         config, tokenizer_src.get_vocab_size(), tokenizer_tgt.get_vocab_size()
     ).to(device)
     # Tensorboard
-    writer = SummaryWriter(config["experiment_name"])
+    writer = SummaryWriter(config.experiment_name)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=config["lr"], eps=1e-9)
+    optimizer = torch.optim.Adam(model.parameters(), lr=config.lr, eps=1e-9)
 
     # If the user specified a model to preload before training, load it
     initial_epoch = 0
     global_step = 0
-    preload = config["preload"]
+    preload = config.preload
     model_filename = (
         latest_weights_file_path(config)
         if preload == "latest"
@@ -304,7 +302,7 @@ def train_model(config: dict) -> None:
         ignore_index=tokenizer_tgt.token_to_id("[PAD]"), label_smoothing=0.1
     )
 
-    for epoch in range(initial_epoch, config["num_epochs"]):
+    for epoch in range(initial_epoch, config.num_epochs):
         torch.cuda.empty_cache()
         model.train()
         batch_iterator = tqdm(train_dataloader, desc=f"Processing Epoch {epoch:02d}")
@@ -351,7 +349,7 @@ def train_model(config: dict) -> None:
             val_dataloader,
             tokenizer_src,
             tokenizer_tgt,
-            config["seq"],
+            config.seq,
             device,
             lambda msg: batch_iterator.write(msg),
             global_step,
@@ -373,5 +371,5 @@ def train_model(config: dict) -> None:
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
-    config = get_config()
+    config = Config()
     train_model(config)
