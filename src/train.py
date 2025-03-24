@@ -12,8 +12,7 @@ from tokenizers import Tokenizer  # type: ignore # From Huggingface
 from tokenizers.models import WordLevel  # type: ignore # From Huggingface
 from tokenizers.pre_tokenizers import Whitespace  # type: ignore # From Huggingface
 from tokenizers.trainers import WordLevelTrainer  # type: ignore # From Huggingface
-from torch.optim.lr_scheduler import LambdaLR
-from torch.utils.data import DataLoader, Dataset, random_split
+from torch.utils.data import DataLoader, random_split
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
@@ -26,7 +25,6 @@ def greedy_decode(
     model: Transformer,
     source: torch.Tensor,
     source_mask: torch.Tensor,
-    tokenizer_src: Tokenizer,
     tokennzer_tgt: Tokenizer,
     max_len: int,
     device: torch.device,
@@ -108,7 +106,6 @@ def run_validation(
                 model,
                 encoder_input,
                 encoder_mask,
-                tokenizer_src,
                 tokenizer_tgt,
                 max_len,
                 device,
