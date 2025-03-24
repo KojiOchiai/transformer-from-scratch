@@ -5,7 +5,7 @@ from pathlib import Path
 @dataclass
 class Config:
     batch_size: int = 8
-    num_epochs: int = 20
+    num_epochs: int = 30
     lr: float = 1e-4
     seq: int = 350
     d_model: int = 512
