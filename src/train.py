@@ -321,10 +321,11 @@ def train_model(config: Config) -> None:
     for epoch in range(initial_epoch, config.num_epochs):
         torch.cuda.empty_cache()
         model.train()
-        batch_iterator: tqdm[Batch] = tqdm(
+        batch_iterator: tqdm[dict] = tqdm(
             train_dataloader, desc=f"Processing Epoch {epoch:02d}"
         )
-        for batch in batch_iterator:
+        for batch_ in batch_iterator:
+            batch = Batch(**batch_)
             encoder_input = batch.encoder_input.to(device)  # (B, seq)
             decoder_input = batch.decoder_input.to(device)  # (B, seq)
             encoder_mask = batch.encoder_mask.to(device)  # (B, 1, 1, seq)

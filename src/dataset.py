@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 import torch
 from datasets import Dataset as HFDataset  # type: ignore # From Huggingface
@@ -49,7 +49,7 @@ class TranslationDataset(Dataset):
     def __len__(self) -> int:
         return len(self.ds)
 
-    def __getitem__(self, idx: int) -> Batch:
+    def __getitem__(self, idx: int) -> dict:
         src_target_pair = self.ds[idx]
         src_text = src_target_pair["translation"][self.src_lang]
         tgt_text = src_target_pair["translation"][self.tgt_lang]
@@ -113,20 +113,22 @@ class TranslationDataset(Dataset):
         assert decoder_input.size(0) == self.seq
         assert label.size(0) == self.seq
 
-        return Batch(
-            encoder_input=encoder_input,  # (seq)
-            decoder_input=decoder_input,  # (seq)
-            encoder_mask=(encoder_input != self.pad_token)
-            .unsqueeze(0)
-            .unsqueeze(0)
-            .int(),  # (1: batch, 1: query, seq: key)
-            decoder_mask=(decoder_input != self.pad_token).unsqueeze(0).int()
-            & causal_mask(
-                decoder_input.size(0)
-            ),  # (1: query, seq: key) & (1: batch, seq: query, seq: key)
-            label=label,  # (seq)
-            src_text=src_text,
-            tgt_text=tgt_text,
+        return asdict(
+            Batch(
+                encoder_input=encoder_input,  # (seq)
+                decoder_input=decoder_input,  # (seq)
+                encoder_mask=(encoder_input != self.pad_token)
+                .unsqueeze(0)
+                .unsqueeze(0)
+                .int(),  # (1: batch, 1: query, seq: key)
+                decoder_mask=(decoder_input != self.pad_token).unsqueeze(0).int()
+                & causal_mask(
+                    decoder_input.size(0)
+                ),  # (1: query, seq: key) & (1: batch, seq: query, seq: key)
+                label=label,  # (seq)
+                src_text=src_text,
+                tgt_text=tgt_text,
+            )
         )
 
 
