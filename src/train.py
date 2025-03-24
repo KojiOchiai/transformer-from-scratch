@@ -1,5 +1,6 @@
 import os
 import warnings
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Callable, Generator
 
@@ -233,6 +234,22 @@ def get_model(config: Config, vocab_src_len: int, vocab_tgt_len: int) -> Transfo
     return model
 
 
+@dataclass
+class State:
+    epoch: int
+    model_state_dict: dict
+    optimizer_state_dict: dict
+    global_step: int
+
+    def save(self, filename: str) -> None:
+        torch.save(asdict(self), filename)
+
+    @staticmethod
+    def load(filename: str) -> "State":
+        state_dict: dict = torch.load(filename)
+        return State(**state_dict)
+
+
 def train_model(config: Config) -> None:
     # Define the device
     device_type = (
@@ -289,11 +306,11 @@ def train_model(config: Config) -> None:
     )
     if model_filename:
         print(f"Preloading model {model_filename}")
-        state = torch.load(model_filename)
-        model.load_state_dict(state["model_state_dict"])
-        initial_epoch = state["epoch"] + 1
-        optimizer.load_state_dict(state["optimizer_state_dict"])
-        global_step = state["global_step"]
+        state = State.load(model_filename)
+        model.load_state_dict(state.model_state_dict)
+        initial_epoch = state.epoch + 1
+        optimizer.load_state_dict(state.optimizer_state_dict)
+        global_step = state.global_step
     else:
         print("No model to preload, starting flom scratch")
 
@@ -358,15 +375,12 @@ def train_model(config: Config) -> None:
 
         # Save the model at the end of every epoch
         model_filename = get_weights_file_path(config, f"{epoch:02d}")
-        torch.save(
-            {
-                "epoch": epoch,
-                "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": optimizer.state_dict(),
-                "global_step": global_step,
-            },
-            model_filename,
-        )
+        State(
+            epoch=epoch,
+            model_state_dict=model.state_dict(),
+            optimizer_state_dict=optimizer.state_dict(),
+            global_step=global_step,
+        ).save(model_filename)
 
 
 if __name__ == "__main__":
