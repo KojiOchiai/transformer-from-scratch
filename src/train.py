@@ -308,7 +308,7 @@ def train_model(config: Config) -> None:
             train_dataloader, desc=f"Processing Epoch {epoch:02d}"
         )
         for batch in batch_iterator:
-            encoder_input = batch.encoder_input.to(device)  # (b, seq)
+            encoder_input = batch.encoder_input.to(device)  # (B, seq)
             decoder_input = batch.decoder_input.to(device)  # (B, seq)
             encoder_mask = batch.encoder_mask.to(device)  # (B, 1, 1, seq)
             decoder_mask = batch.decoder_mask.to(device)  # (B, 1, seq, seq)
