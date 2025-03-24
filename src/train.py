@@ -17,7 +17,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from config import Config, get_weights_file_path, latest_weights_file_path
-from dataset import TranslationDataset, causal_mask
+from dataset import Batch, TranslationDataset, causal_mask
 from model import Transformer, build_transformer
 
 
@@ -304,12 +304,14 @@ def train_model(config: Config) -> None:
     for epoch in range(initial_epoch, config.num_epochs):
         torch.cuda.empty_cache()
         model.train()
-        batch_iterator = tqdm(train_dataloader, desc=f"Processing Epoch {epoch:02d}")
+        batch_iterator: tqdm[Batch] = tqdm(
+            train_dataloader, desc=f"Processing Epoch {epoch:02d}"
+        )
         for batch in batch_iterator:
-            encoder_input = batch["encoder_input"].to(device)  # (b, seq)
-            decoder_input = batch["decoder_input"].to(device)  # (B, seq)
-            encoder_mask = batch["encoder_mask"].to(device)  # (B, 1, 1, seq)
-            decoder_mask = batch["decoder_mask"].to(device)  # (B, 1, seq, seq)
+            encoder_input = batch.encoder_input.to(device)  # (b, seq)
+            decoder_input = batch.decoder_input.to(device)  # (B, seq)
+            encoder_mask = batch.encoder_mask.to(device)  # (B, 1, 1, seq)
+            decoder_mask = batch.decoder_mask.to(device)  # (B, 1, seq, seq)
 
             # Run the tensors through the encoder, decoder and the projection layer
             encoder_output = model.encode(
@@ -321,7 +323,7 @@ def train_model(config: Config) -> None:
             proj_output = model.project(decoder_outout)  # (B, seq, vocab_size)
 
             # Compare the outoput with the label
-            label: torch.Tensor = batch["label"].to(device)  # (B, seq)
+            label: torch.Tensor = batch.label.to(device)  # (B, seq)
 
             # Compute the loss using a simple cross entropy
             loss: torch.Tensor = loss_fun(

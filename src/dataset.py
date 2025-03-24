@@ -1,7 +1,20 @@
+from dataclasses import dataclass
+
 import torch
 from datasets import Dataset as HFDataset  # type: ignore # From Huggingface
 from tokenizers import Tokenizer  # type: ignore # From Huggingface
 from torch.utils.data import Dataset
+
+
+@dataclass
+class Batch:
+    encoder_input: torch.Tensor
+    decoder_input: torch.Tensor
+    encoder_mask: torch.Tensor
+    decoder_mask: torch.Tensor
+    label: torch.Tensor
+    src_text: str
+    tgt_text: str
 
 
 class TranslationDataset(Dataset):
@@ -36,7 +49,7 @@ class TranslationDataset(Dataset):
     def __len__(self) -> int:
         return len(self.ds)
 
-    def __getitem__(self, idx: int) -> dict:
+    def __getitem__(self, idx: int) -> Batch:
         src_target_pair = self.ds[idx]
         src_text = src_target_pair["translation"][self.src_lang]
         tgt_text = src_target_pair["translation"][self.tgt_lang]
@@ -100,21 +113,21 @@ class TranslationDataset(Dataset):
         assert decoder_input.size(0) == self.seq
         assert label.size(0) == self.seq
 
-        return {
-            "encoder_input": encoder_input,  # (seq)
-            "decoder_input": decoder_input,  # (seq)
-            "encoder_mask": (encoder_input != self.pad_token)
+        return Batch(
+            encoder_input=encoder_input,  # (seq)
+            decoder_input=decoder_input,  # (seq)
+            encoder_mask=(encoder_input != self.pad_token)
             .unsqueeze(0)
             .unsqueeze(0)
             .int(),  # (1: batch, 1: query, seq: key)
-            "decoder_mask": (decoder_input != self.pad_token).unsqueeze(0).int()
+            decoder_mask=(decoder_input != self.pad_token).unsqueeze(0).int()
             & causal_mask(
                 decoder_input.size(0)
             ),  # (1: query, seq: key) & (1: batch, seq: query, seq: key)
-            "label": label,  # (seq)
-            "src_text": src_text,
-            "tgt_text": tgt_text,
-        }
+            label=label,  # (seq)
+            src_text=src_text,
+            tgt_text=tgt_text,
+        )
 
 
 def causal_mask(size: int) -> torch.Tensor:
